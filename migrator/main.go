@@ -1,22 +1,21 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatal("specify a migration action: up or down")
+		log.Fatal("specify an action: up, down")
 	}
 
 	databaseDSN := os.Getenv("DATABASE_URL")
@@ -29,9 +28,15 @@ func main() {
 		action     = strings.ToLower(os.Args[1])
 	)
 
-	driver, err := createDriverInstance(databaseDSN, driverName)
+	db, err := sql.Open(driverName, databaseDSN)
 	if err != nil {
-		log.Fatalf("create database driver: %v", err)
+		log.Fatalf("open database: %v", err)
+	}
+
+	driver, err := mysql.WithInstance(db, &mysql.Config{})
+	if err != nil {
+		_ = db.Close()
+		log.Fatalf("create MySQL migration driver: %v", err)
 	}
 
 	migrator, err := migrate.NewWithDatabaseInstance(
@@ -46,13 +51,17 @@ func main() {
 
 	switch action {
 	case "up":
-		if err := migrator.Up(); err != nil {
-			if errors.Is(err, migrate.ErrNoChange) {
-				log.Println("database is already up to date")
-				return
-			}
-
+		err := migrator.Up()
+		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 			log.Fatalf("run migration up: %v", err)
+		}
+		if errors.Is(err, migrate.ErrNoChange) {
+			log.Println("database is already up to date")
+		}
+
+		log.Println("seeding users and wallets")
+		if err := seedDatabase(context.Background(), db); err != nil {
+			log.Fatalf("seed database: %v", err)
 		}
 
 	case "down":
@@ -65,23 +74,8 @@ func main() {
 			log.Fatalf("run migration down: %v", err)
 		}
 	default:
-		log.Fatalf("unsupported migration action %q: use up or down", action)
+		log.Fatalf("unsupported action %q: use up, down", action)
 	}
 
 	log.Println("database migrations completed")
-}
-
-func createDriverInstance(dsn, driverName string) (database.Driver, error) {
-	db, err := sql.Open(driverName, dsn)
-	if err != nil {
-		return nil, fmt.Errorf("open database: %w", err)
-	}
-
-	driver, err := mysql.WithInstance(db, &mysql.Config{})
-	if err != nil {
-		_ = db.Close()
-		return nil, fmt.Errorf("create MySQL migration driver: %w", err)
-	}
-
-	return driver, nil
 }

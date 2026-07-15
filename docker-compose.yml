@@ -1,0 +1,35 @@
+services:
+  mysql:
+    image: docker.arvancloud.ir/mysql:8.4
+    container_name: mysql
+    environment:
+      MYSQL_DATABASE: sms_gateway
+      MYSQL_USER: sms_user
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-sms_password}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-root_password}"
+      TZ: UTC
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -uroot -p"$${MYSQL_ROOT_PASSWORD}" --silent
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  db-migrate:
+    build:
+      context: ./migrator
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "sms_user:${MYSQL_PASSWORD:-sms_password}@tcp(mysql:3306)/sms_gateway?multiStatements=true"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  mysql_data:

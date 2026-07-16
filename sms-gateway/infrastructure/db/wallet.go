@@ -19,8 +19,9 @@ func NewWalletDB(db *sql.DB) *WalletDB {
 
 func (w *WalletDB) TopUp(ctx context.Context, userID uint64, amount uint64) error {
 	query := `UPDATE wallets
-	SET balance = balance + ?
-	WHERE user_id = ?;`
+	SET balance = balance + ?,
+	updated_at = CURRENT_TIMESTAMP()
+	WHERE user_id = ?`
 
 	result, err := w.db.ExecContext(ctx, query, amount, userID)
 	if err != nil {

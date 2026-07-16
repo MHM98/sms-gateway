@@ -2,12 +2,14 @@ package controller
 
 import (
 	"context"
-	"errors"
+	controllermodel "sms-gateway/models/controller"
 )
-
-var ErrWalletNotFound = errors.New("wallet not found")
 
 type WalletRepository interface {
 	TopUp(ctx context.Context, userID uint64, amount uint64) error
 	GetUserBalance(ctx context.Context, userID uint64) (uint64, error)
+}
+
+type MessageRepository interface {
+	CreateAndCharge(ctx context.Context, data controllermodel.CreateMessage) error
 }

@@ -12,6 +12,7 @@ import (
 	infrastructuredb "sms-gateway/infrastructure/db"
 	database "sms-gateway/pkg/db"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -20,25 +21,33 @@ const (
 	shutdownTimeout = 10 * time.Second
 )
 
+// this validator use to validate struct fileds
+type structValidator struct {
+	validate *validator.Validate
+}
+
+func (v *structValidator) Validate(out any) error {
+	return v.validate.Struct(out)
+}
+
 type application struct {
 	http *fiber.App
 	db   *sql.DB
 }
 
-func newApplication(ctx context.Context) (_ *application, err error) {
+func newApplication(ctx context.Context) (*application, error) {
 	databasePool, err := database.Open(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 
-	walletRepository := infrastructuredb.NewWalletDB(databasePool)
-	walletController := controller.NewWalletController(walletRepository)
-	walletHandler := handler.NewWalletHandler(walletController)
-
-	httpApp := fiber.New()
-	initRoutes(httpApp, handlers{
-		wallet: walletHandler,
+	handlers := newHandlers(databasePool)
+	httpApp := fiber.New(fiber.Config{
+		StructValidator: &structValidator{
+			validate: validator.New(),
+		},
 	})
+	initRoutes(httpApp, handlers)
 
 	return &application{
 		http: httpApp,
@@ -73,4 +82,19 @@ func (a *application) Close() error {
 	}
 
 	return errors.Join(closeErrors...)
+}
+
+func newHandlers(db *sql.DB) handlers {
+	walletRepository := infrastructuredb.NewWalletDB(db)
+	walletController := controller.NewWalletController(walletRepository)
+	walletHandler := handler.NewWalletHandler(walletController)
+
+	messageRepository := infrastructuredb.NewMessageDB(db)
+	messageController := controller.NewMessageController(messageRepository)
+	messageHandler := handler.NewMessageHandler(messageController)
+
+	return handlers{
+		wallet:  walletHandler,
+		message: messageHandler,
+	}
 }

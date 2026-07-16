@@ -5,19 +5,19 @@ import (
 )
 
 type WalletController struct {
-	walletDB WalletRepository
+	walletRepository WalletRepository
 }
 
-func NewWalletController(walletDB WalletRepository) *WalletController {
+func NewWalletController(walletRepository WalletRepository) *WalletController {
 	return &WalletController{
-		walletDB: walletDB,
+		walletRepository: walletRepository,
 	}
 }
 
 func (w *WalletController) TopUp(ctx context.Context, userID uint64, amount uint64) error {
-	return w.walletDB.TopUp(ctx, userID, amount)
+	return w.walletRepository.TopUp(ctx, userID, amount)
 }
 
 func (w *WalletController) GetUserBalance(ctx context.Context, userID uint64) (uint64, error) {
-	return w.walletDB.GetUserBalance(ctx, userID)
+	return w.walletRepository.GetUserBalance(ctx, userID)
 }

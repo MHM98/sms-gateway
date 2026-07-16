@@ -6,6 +6,6 @@ type WalletBalanceResponse struct {
 }
 
 type TopUpWalletRequest struct {
-	UserID uint64 `json:"user_id"`
-	Amount uint64 `json:"amount"`
+	UserID uint64 `json:"user_id" validate:"gt=0"`
+	Amount uint64 `json:"amount" validate:"gt=0"`
 }

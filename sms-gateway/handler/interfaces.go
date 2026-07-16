@@ -2,19 +2,35 @@ package handler
 
 import (
 	"context"
+
+	controllermodel "sms-gateway/models/controller"
 )
 
-type WalletController interface {
+// wallet
+type IWalletController interface {
 	TopUp(ctx context.Context, userID uint64, amount uint64) error
 	GetUserBalance(ctx context.Context, userID uint64) (uint64, error)
 }
 
 type WalletHandler struct {
-	controller WalletController
+	controller IWalletController
 }
 
-func NewWalletHandler(controller WalletController) *WalletHandler {
+func NewWalletHandler(controller IWalletController) *WalletHandler {
 	return &WalletHandler{
 		controller: controller,
 	}
+}
+
+// message
+type IMessageController interface {
+	CreateAndCharge(ctx context.Context, input controllermodel.CreateMessage) error
+}
+
+type MessageHandler struct {
+	controller IMessageController
+}
+
+func NewMessageHandler(controller IMessageController) *MessageHandler {
+	return &MessageHandler{controller: controller}
 }

@@ -11,14 +11,15 @@ import (
 )
 
 type handlers struct {
-	wallet *handler.WalletHandler
+	wallet  *handler.WalletHandler
+	message *handler.MessageHandler
 }
 
 func initRoutes(app *fiber.App, h handlers) {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"*"},
-		AllowHeaders: []string{"Content-Type, Content-Length"},
-		AllowMethods: []string{"POST, GET"},
+		AllowHeaders: []string{fiber.HeaderContentType, fiber.HeaderContentLength},
+		AllowMethods: []string{fiber.MethodGet, fiber.MethodPost},
 	}))
 
 	app.Use(logger.New())
@@ -37,4 +38,8 @@ func initRoutes(app *fiber.App, h handlers) {
 	wallet := v1.Group("/wallet")
 	wallet.Post("/add", h.wallet.TopUpWallet)
 	wallet.Get("/:user_id", h.wallet.GetWalletBalance)
+
+	// message
+	message := v1.Group("/message")
+	message.Post("/send", h.message.SendMessage)
 }

@@ -31,5 +31,20 @@ services:
         condition: service_healthy
     restart: "no"
 
+  sms-gateway:
+    container_name: sms-gateway
+    build:
+      context: ./sms-gateway
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "sms_user:${MYSQL_PASSWORD:-sms_password}@tcp(mysql:3306)/sms_gateway?parseTime=true"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    stop_grace_period: 15s
+
 volumes:
   mysql_data:

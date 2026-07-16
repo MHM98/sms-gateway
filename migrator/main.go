@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
+	if len(os.Args) < 1 {
 		log.Fatal("specify an action: up, down")
 	}
 

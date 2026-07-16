@@ -22,29 +22,10 @@ CREATE TABLE IF NOT EXISTS wallets (
 );
 
 
-CREATE TABLE IF NOT EXISTS message_requests (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    user_id BIGINT UNSIGNED NOT NULL,
-    idempotency_key VARCHAR(64) NOT NULL,
-    payload_hash BINARY(32) NOT NULL,
-    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-
-    PRIMARY KEY (id),
-
-    UNIQUE KEY uq_message_requests_idempotency (
-        user_id,
-        idempotency_key
-    ),
-
-    CONSTRAINT fk_message_requests_user
-        FOREIGN KEY (user_id)
-        REFERENCES users (id)
-);
-
-
 CREATE TABLE IF NOT EXISTS messages (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    request_id BIGINT UNSIGNED NOT NULL,
+
+    -- Logical relation to users.id becuase of mysql own limitation
     user_id BIGINT UNSIGNED NOT NULL,
 
     recipient VARCHAR(20) NOT NULL,
@@ -60,10 +41,6 @@ CREATE TABLE IF NOT EXISTS messages (
     submitted_to_operator_at DATETIME(6) NULL,
 
     PRIMARY KEY (id, created_at),
-    
-    INDEX idx_messages_request (
-        request_id
-    ),
 
     INDEX idx_messages_user_report (
         user_id,

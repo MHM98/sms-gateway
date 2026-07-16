@@ -2,9 +2,11 @@ package main
 
 import (
 	"sms-gateway/handler"
+	"sms-gateway/handler/middleware"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/idempotency"
 	"github.com/gofiber/fiber/v3/middleware/logger"
 )
 
@@ -20,6 +22,14 @@ func initRoutes(app *fiber.App, h handlers) {
 	}))
 
 	app.Use(logger.New())
+
+	// we use this middleware so it enforce
+	// Idempotency header for unsafe requests
+	app.Use(middleware.RequireIdempotencyKey)
+
+	// it store data in memory.
+	//  we should use redis as storage in production
+	app.Use(idempotency.New())
 
 	v1 := app.Group("/api/v1/sms-gateway")
 

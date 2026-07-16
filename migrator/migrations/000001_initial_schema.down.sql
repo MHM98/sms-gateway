@@ -1,4 +1,3 @@
 DROP TABLE IF EXISTS messages;
-DROP TABLE IF EXISTS message_requests;
 DROP TABLE IF EXISTS wallets;
 DROP TABLE IF EXISTS users;

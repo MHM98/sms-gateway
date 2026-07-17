@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS messages (
 
     INDEX idx_messages_pending (
         status,
+        service_type,
         created_at,
         id
     )

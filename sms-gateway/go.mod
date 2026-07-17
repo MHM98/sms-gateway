@@ -3,9 +3,11 @@ module sms-gateway
 go 1.26.5
 
 require (
+	github.com/cenkalti/backoff/v7 v7.0.0
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/gofiber/fiber/v3 v3.4.0
+	github.com/rabbitmq/amqp091-go v1.12.0
 )
 
 require (

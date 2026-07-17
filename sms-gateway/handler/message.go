@@ -13,11 +13,11 @@ func (m *MessageHandler) SendMessage(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid request body")
 	}
 
-	input := controllermodel.CreateMessage{
+	input := controllermodel.Message{
 		UserID:      request.UserID,
 		Recipient:   request.Recipient,
 		Body:        request.Body,
-		ServiceType: request.ServiceType,
+		ServiceType: controllermodel.ServiceType(request.ServiceType),
 	}
 
 	if err := m.controller.CreateAndCharge(c.Context(), input); err != nil {

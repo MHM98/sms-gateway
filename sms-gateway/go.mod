@@ -8,6 +8,7 @@ require (
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/rabbitmq/amqp091-go v1.12.0
+	github.com/robfig/cron/v3 v3.0.1
 )
 
 require (

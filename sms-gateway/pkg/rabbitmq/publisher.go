@@ -30,15 +30,19 @@ type Publisher struct {
 	ch *amqp.Channel
 }
 
-func NewPublisher(client *Client) *Publisher {
+func NewPublisher(client *Client) (*Publisher, error) {
+	if client == nil {
+		return nil, errors.New("RabbitMQ client is required")
+	}
+
 	return &Publisher{
 		client: client,
-	}
+	}, nil
 }
 
 // retries with ExponentialBackOff until 60s or ctx expires.
 func (p *Publisher) TryToPublish(ctx context.Context, message PublishMessage) error {
-	if err := p.validteMessage(&message); err != nil {
+	if err := p.validateMessage(message); err != nil {
 		return err
 	}
 
@@ -131,7 +135,7 @@ func (p *Publisher) Publish(ctx context.Context, message PublishMessage) error {
 	return nil
 }
 
-func (p *Publisher) validteMessage(message *PublishMessage) error {
+func (p *Publisher) validateMessage(message PublishMessage) error {
 	if message.RoutingKey == "" {
 		return errors.New("routing key is required")
 	}

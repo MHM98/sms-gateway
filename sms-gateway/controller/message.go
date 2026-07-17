@@ -2,23 +2,58 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"fmt"
+
 	controllermodel "sms-gateway/models/controller"
 )
 
 // in production we should read this value from env
 const messageChargeAmount uint64 = 1
 
-type messageController struct {
-	messageRepository MessageRepository
+type MessageController struct {
+	repository IMessageRepository
+	publisher  IMessagePublisher
 }
 
-func NewMessageController(messageRepository MessageRepository) *messageController {
-	return &messageController{messageRepository: messageRepository}
+func NewMessageController(repository IMessageRepository, publisher IMessagePublisher) *MessageController {
+	return &MessageController{
+		repository: repository,
+		publisher:  publisher,
+	}
 }
 
-func (m *messageController) CreateAndCharge(ctx context.Context, DTO controllermodel.CreateMessage) error {
-	DTO.ChargeAmount = messageChargeAmount
-	DTO.Status = "pending" // should read the status from env
+func (c *MessageController) CreateAndCharge(ctx context.Context, message controllermodel.Message) error {
+	message.ChargeAmount = messageChargeAmount
 
-	return m.messageRepository.CreateAndCharge(ctx, DTO)
+	return c.repository.CreateAndCharge(ctx, message)
+}
+
+func (c *MessageController) DispatchPendingMessages(ctx context.Context, serviceType controllermodel.ServiceType, limit int) error {
+
+	messages, err := c.repository.ClaimPendingMessages(ctx, serviceType, limit)
+	if err != nil {
+		return fmt.Errorf("claim pending %s messages: %w", serviceType, err)
+	}
+
+	var dispatchErrors []error
+	for _, message := range messages {
+		if err := c.publisher.Publish(ctx, message); err != nil {
+			publishErr := fmt.Errorf("publish message %d: %w", message.ID, err)
+
+			//change message status for furture processsing
+			releaseErr := c.repository.ReleaseMessage(ctx, message.ID, message.CreatedAt)
+			if releaseErr != nil {
+				dispatchErrors = append(dispatchErrors, errors.Join(
+					publishErr,
+					fmt.Errorf("release message %d: %w", message.ID, releaseErr),
+				))
+				continue
+			}
+
+			dispatchErrors = append(dispatchErrors, publishErr)
+		}
+	}
+
+	return errors.Join(dispatchErrors...)
 }

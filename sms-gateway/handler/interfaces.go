@@ -24,7 +24,7 @@ func NewWalletHandler(controller IWalletController) *WalletHandler {
 
 // message
 type IMessageController interface {
-	CreateAndCharge(ctx context.Context, input controllermodel.CreateMessage) error
+	CreateAndCharge(ctx context.Context, input controllermodel.Message) error
 }
 
 type MessageHandler struct {

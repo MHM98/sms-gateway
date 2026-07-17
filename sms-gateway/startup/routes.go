@@ -1,18 +1,32 @@
-package main
+package startup
 
 import (
-	"sms-gateway/handler"
 	"sms-gateway/handler/middleware"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/idempotency"
 	"github.com/gofiber/fiber/v3/middleware/logger"
 )
 
-type handlers struct {
-	wallet  *handler.WalletHandler
-	message *handler.MessageHandler
+type structValidator struct {
+	validate *validator.Validate
+}
+
+func (v *structValidator) Validate(out any) error {
+	return v.validate.Struct(out)
+}
+
+func newHTTPApplication(h handlers) *fiber.App {
+	app := fiber.New(fiber.Config{
+		StructValidator: &structValidator{
+			validate: validator.New(),
+		},
+	})
+	initRoutes(app, h)
+
+	return app
 }
 
 func initRoutes(app *fiber.App, h handlers) {

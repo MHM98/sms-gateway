@@ -5,10 +5,10 @@ import (
 )
 
 type WalletController struct {
-	walletRepository WalletRepository
+	walletRepository IWalletRepository
 }
 
-func NewWalletController(walletRepository WalletRepository) *WalletController {
+func NewWalletController(walletRepository IWalletRepository) *WalletController {
 	return &WalletController{
 		walletRepository: walletRepository,
 	}

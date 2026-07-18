@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	normalDispatchSpec   = "@every 30s"
-	normalDispatchLimit  = 2000
+	normalDispatchSpec   = "@every 10s"
+	normalDispatchLimit  = 8000
 	expressDispatchSpec  = "@every 5s"
 	expressDispatchLimit = 10000
 	dispatchJobTimeout   = 30 * time.Second

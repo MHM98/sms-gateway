@@ -49,6 +49,42 @@ services:
     restart: unless-stopped
     stop_grace_period: 15s
 
+  sms-worker-normal:
+    build:
+      context: ./sms-worker
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "sms_user:${MYSQL_PASSWORD:-sms_password}@tcp(mysql:3306)/sms_gateway?parseTime=true"
+      RABBITMQ_URL: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST}"
+      WORKER_SERVICE_TYPE: normal
+    depends_on:
+      mysql:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 15s
+
+  sms-worker-express:
+    build:
+      context: ./sms-worker
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "sms_user:${MYSQL_PASSWORD:-sms_password}@tcp(mysql:3306)/sms_gateway?parseTime=true"
+      RABBITMQ_URL: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST}"
+      WORKER_SERVICE_TYPE: express
+    depends_on:
+      mysql:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 15s
+
   rabbitmq:
     image: docker.arvancloud.ir/rabbitmq:4-management
     container_name: rabbitmq

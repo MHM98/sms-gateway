@@ -18,13 +18,13 @@ func NewMessageRepository(db *sql.DB) *messageRepository {
 	return &messageRepository{db: db}
 }
 
-func (m *messageRepository) MarkMessageStatuSsubmitted(ctx context.Context, messageId uint64) error {
+func (m *messageRepository) MarkMessageStatusSubmitted(ctx context.Context, messageID uint64) error {
 	query := `UPDATE messages 
 	SET status=?,
-	submission_latency_ms = TIMESTAMPDIFF(MINUTE, created_at, CURRENT_TIMESTAMP())
+	submission_latency_ms = TIMESTAMPDIFF(SECOND, created_at, CURRENT_TIMESTAMP())
 	WHERE id=?`
 
-	_, err := m.db.ExecContext(ctx, query, messageStatusSubmitted, messageId)
+	_, err := m.db.ExecContext(ctx, query, messageStatusSubmitted, messageID)
 	if err != nil {
 		return fmt.Errorf("failed to update messge status. err: %w", err)
 	}

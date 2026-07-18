@@ -170,55 +170,44 @@ func (c *Consumer) openSession(ctx context.Context) (*consumerSession, error) {
 }
 
 func (c *Consumer) consume(ctx context.Context, session *consumerSession, handler Handler) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
+	for delivery := range session.deliveries {
+		requeue, handlerErr := handler(
+			ctx,
+			Delivery{
+				ID:          delivery.MessageId,
+				Body:        delivery.Body,
+				Redelivered: delivery.Redelivered,
+			},
+		)
 
-		case delivery, ok := <-session.deliveries:
-			if !ok {
+		if handlerErr == nil {
+			if err := delivery.Ack(false); err != nil {
 				return fmt.Errorf(
-					"RabbitMQ delivery channel closed",
-				)
-			}
-
-			requeue, handlerErr := handler(
-				ctx,
-				Delivery{
-					ID:          delivery.MessageId,
-					Body:        delivery.Body,
-					Redelivered: delivery.Redelivered,
-				},
-			)
-
-			if handlerErr == nil {
-				if err := delivery.Ack(false); err != nil {
-					return fmt.Errorf(
-						"ack message: %w",
-						err,
-					)
-				}
-
-				continue
-			}
-
-			if err := delivery.Nack(
-				false,
-				requeue,
-			); err != nil {
-				return fmt.Errorf(
-					"nack message: %w",
+					"ack message: %w",
 					err,
 				)
 			}
 
-			log.Printf(
-				"RabbitMQ message failed: queue=%s message_id=%s requeue=%t error=%v",
-				c.queue,
-				delivery.MessageId,
-				requeue,
-				handlerErr,
+			continue
+		}
+
+		if err := delivery.Nack(
+			false,
+			requeue,
+		); err != nil {
+			return fmt.Errorf(
+				"nack message: %w",
+				err,
 			)
 		}
+
+		log.Printf(
+			"RabbitMQ message failed: queue=%s message_id=%s requeue=%t error=%v",
+			c.queue,
+			delivery.MessageId,
+			requeue,
+			handlerErr,
+		)
 	}
+	return errors.New("RabbitMQ delivery channel closed")
 }

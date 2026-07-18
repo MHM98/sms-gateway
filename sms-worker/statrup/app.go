@@ -3,29 +3,44 @@ package statrup
 import (
 	"context"
 	"database/sql"
-	"os"
+
 	"sms-worker/controller"
-	infraDB "sms-worker/infrastructure/db"
 	"sms-worker/pkg/rabbitmq"
 )
 
 type application struct {
-	db           *sql.DB
-	rabbitClient *rabbitmq.Client
+	db                *sql.DB
+	rabbitClient      *rabbitmq.Client
+	messageController *controller.MessageController
 }
 
 func Run(ctx context.Context) error {
-
-	db, err := openDatabase(ctx)
+	app, err := newApplication(ctx)
 	if err != nil {
 		return err
 	}
 
-	messageRepo := infraDB.NewMessageRepository(db)
-	messageCntl := controller.NewMessageController(messageRepo)
+	defer app.Close()
 
-	rabbitmq.NewClient(rabbitmq.Config{
-		URL: os.Getenv("RABBITMQ_URL"),
-		
-	})
+	return app.Run(ctx)
+}
+
+func newApplication(ctx context.Context) (*application, error) {
+	databasePool, err := openDatabase(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resources := &application{db: databasePool}
+
+	rabbit, err := openRabbitMQ(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resources.rabbitClient = rabbit.client
+
+	controllers := buildDependencies(databasePool, rabbit.consumer)
+	resources.messageController = controllers.message
+
+	return resources, nil
 }

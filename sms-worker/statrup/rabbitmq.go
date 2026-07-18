@@ -18,8 +18,8 @@ const (
 	expressQueueName  = "sms.messages.express"
 	expressRoutingKey = "message.express"
 
-	consumerPrefetch = 4
-	consumerWorkers  = 4
+	consumerPrefetch = 30
+	consumerWorkers  = 10
 )
 
 type rabbitResources struct {

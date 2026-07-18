@@ -22,9 +22,9 @@ func Open(ctx context.Context) (*sql.DB, error) {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 
-	conn.SetMaxOpenConns(10)
+	conn.SetMaxOpenConns(15)
 	conn.SetMaxIdleConns(10)
-	conn.SetConnMaxLifetime(30 * time.Second)
+	conn.SetConnMaxLifetime(60 * time.Second)
 
 	if err := conn.PingContext(ctx); err != nil {
 		_ = conn.Close()

@@ -37,7 +37,7 @@ services:
       context: ./sms-gateway
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: "sms_user:${MYSQL_PASSWORD:-sms_password}@tcp(mysql:3306)/sms_gateway?parseTime=true"
+      DATABASE_URL: "sms_user:${MYSQL_PASSWORD:-sms_password}@tcp(mysql:3306)/sms_gateway?parseTime=true&interpolateParams=true"
       RABBITMQ_URL: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST}"
     depends_on:
       mysql:
@@ -73,6 +73,8 @@ services:
     build:
       context: ./sms-worker
       dockerfile: Dockerfile
+    deploy:
+      replicas: 3
     environment:
       DATABASE_URL: "sms_user:${MYSQL_PASSWORD:-sms_password}@tcp(mysql:3306)/sms_gateway?parseTime=true"
       RABBITMQ_URL: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST}"

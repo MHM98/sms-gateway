@@ -36,7 +36,7 @@ func (c *MessageController) handleMessage(ctx context.Context, message controlle
 	}
 
 	// we log here for test purpose , in production it should not be the case
-	fmt.Printf("message with ID  %d successully send to %s", message.ID, message.Recipient)
+	fmt.Printf("message with ID %d successfully sent to %s\n", message.ID, message.Recipient)
 
 	return nil
 }

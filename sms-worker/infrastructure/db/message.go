@@ -21,7 +21,7 @@ func NewMessageRepository(db *sql.DB) *messageRepository {
 func (m *messageRepository) MarkMessageStatusSubmitted(ctx context.Context, messageID uint64) error {
 	query := `UPDATE messages 
 	SET status=?,
-	submission_latency_ms = TIMESTAMPDIFF(SECOND, created_at, CURRENT_TIMESTAMP())
+	submission_latency_seconds = TIMESTAMPDIFF(SECOND, created_at, CURRENT_TIMESTAMP())
 	WHERE id=?`
 
 	_, err := m.db.ExecContext(ctx, query, messageStatusSubmitted, messageID)

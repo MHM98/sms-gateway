@@ -1,4 +1,4 @@
-FROM golang:1.26-alpine AS build
+FROM docker.arvancloud.ir/golang:1.26-alpine AS build
 
 WORKDIR /src
 

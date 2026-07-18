@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS messages (
         NOT NULL DEFAULT 'pending',
 
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    submission_latency_ms BIGINT UNSIGNED NULL,
+    submission_latency_seconds BIGINT UNSIGNED NULL,
 
     PRIMARY KEY (id, created_at),
 

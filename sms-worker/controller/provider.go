@@ -14,7 +14,7 @@ func NewMessageProviderController() *messageProviderController {
 
 func (p *messageProviderController) SendMessage(ctx context.Context, message controllermodel.Message) error {
 
-	fmt.Printf("message with ID %d, User ID %d, Body %q delivered to %s",
+	fmt.Printf("message with ID %d, User ID %d, Body %q delivered to %s\n",
 		message.ID, message.UserID, message.Body, message.Recipient)
 	return nil
 }

@@ -46,6 +46,8 @@ services:
         condition: service_completed_successfully
       rabbitmq:
         condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
     restart: unless-stopped
     stop_grace_period: 15s
 

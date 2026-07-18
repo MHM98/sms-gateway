@@ -3,43 +3,33 @@ package main
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
+	"strings"
 )
 
-// this slice used to feed dummy data to database
-var seedUsers = []string{
-	"user1",
-	"user2",
-	"user3",
-	"user4",
-	"user5",
-}
+const (
+	numberOfUsers  = 1000
+	defaultBalance = 10000
+)
 
 func seedDatabase(ctx context.Context, db *sql.DB) (err error) {
+	seedUsers := createUsers(numberOfUsers)
+
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin seed transaction: %w", err)
 	}
 
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-		}
-	}()
+	defer tx.Rollback()
 
-	for _, name := range seedUsers {
-		userID, seedErr := findOrCreateSeedUser(ctx, tx, name)
-		if seedErr != nil {
-			return seedErr
-		}
+	ids, err := insertUsers(ctx, tx, seedUsers)
+	if err != nil {
+		return fmt.Errorf("create user %w", err)
+	}
 
-		if _, seedErr = tx.ExecContext(ctx, `
-			INSERT INTO wallets (user_id, balance)
-			VALUES (?, 0)
-			ON DUPLICATE KEY UPDATE user_id = wallets.user_id`, userID); seedErr != nil {
-			return fmt.Errorf("create wallet for %q: %w", name, seedErr)
-		}
+	err = insertWallets(ctx, tx, ids)
+	if err != nil {
+		return fmt.Errorf("create wallet %w", err)
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -49,29 +39,47 @@ func seedDatabase(ctx context.Context, db *sql.DB) (err error) {
 	return nil
 }
 
-func findOrCreateSeedUser(ctx context.Context, tx *sql.Tx, name string) (uint64, error) {
-	var userID uint64
-	err := tx.QueryRowContext(ctx, `
-		SELECT id
-		FROM users
-		WHERE name = ?`,
-		name).Scan(&userID)
-	if err == nil {
-		return userID, nil
+func insertWallets(ctx context.Context, tx *sql.Tx, ids []int) error {
+	placeholders := strings.
+		TrimSuffix(strings.
+			Repeat(fmt.Sprintf("(?, %d),", defaultBalance), len(ids)), ",")
+
+	args := make([]any, 0, len(ids))
+	for _, id := range ids {
+		args = append(args, id)
 	}
-	if !errors.Is(err, sql.ErrNoRows) {
-		return 0, fmt.Errorf("find seed user %q: %w", name, err)
+	query := fmt.Sprintf(`INSERT IGNORE INTO wallets (user_id, balance)
+	VALUES %s`, placeholders)
+
+	_, err := tx.ExecContext(ctx, query, args...)
+	return err
+
+}
+
+func insertUsers(ctx context.Context, tx *sql.Tx, users map[int]string) ([]int, error) {
+	placeholders := strings.TrimSuffix(strings.Repeat("(?, ?),", len(users)), ",")
+	query := fmt.Sprintf(`INSERT IGNORE INTO users (id,name) VALUES %s`, placeholders)
+
+	args := make([]any, 0, len(users))
+	ids := make([]int, 0, len(users))
+
+	for id, name := range users {
+		args = append(args, id, name)
+		ids = append(ids, id)
 	}
 
-	result, err := tx.ExecContext(ctx, "INSERT INTO users (name) VALUES (?)", name)
+	_, err := tx.ExecContext(ctx, query, args...)
 	if err != nil {
-		return 0, fmt.Errorf("create seed user %q: %w", name, err)
+		return ids, err
+	}
+	return ids, nil
+}
+func createUsers(number int) map[int]string {
+	var users = make(map[int]string)
+
+	for i := 1; i <= number; i++ {
+		users[i] = fmt.Sprintf("user%d", i)
 	}
 
-	insertedID, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("get id for seed user %q: %w", name, err)
-	}
-
-	return uint64(insertedID), nil
+	return users
 }

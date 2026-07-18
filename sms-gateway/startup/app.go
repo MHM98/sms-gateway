@@ -19,7 +19,7 @@ type application struct {
 	cron                   *cron.Cron
 }
 
-func Run(ctx context.Context) (err error) {
+func Run(ctx context.Context) error {
 	app, err := newApplication(ctx)
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func Run(ctx context.Context) (err error) {
 	return app.Run(ctx)
 }
 
-func newApplication(ctx context.Context) (result *application, err error) {
+func newApplication(ctx context.Context) (*application, error) {
 	databasePool, err := openDatabase(ctx)
 	if err != nil {
 		return nil, err

@@ -47,6 +47,48 @@ func (m *messageDB) CreateAndCharge(ctx context.Context, data controllermodel.Me
 	return nil
 }
 
+func (m *messageDB) GetUserReport(ctx context.Context, userID uint64, from, to time.Time) (controllermodel.Messages, error) {
+	query := `SELECT id, user_id, recipient, body, service_type, status, created_at,
+		IFNULL(submission_latency_seconds,0)
+		FROM messages
+		WHERE user_id = ? AND created_at >= ? AND created_at < ?
+		ORDER BY created_at DESC, id DESC`
+
+	rows, err := m.db.QueryContext(ctx, query, userID, from, to)
+	if err != nil {
+		return nil, fmt.Errorf("select user messages report: %w", err)
+	}
+	defer rows.Close()
+
+	messages := make(controllermodel.Messages, 0)
+	for rows.Next() {
+		var (
+			message controllermodel.Message
+		)
+
+		if err := rows.Scan(
+			&message.ID,
+			&message.UserID,
+			&message.Recipient,
+			&message.Body,
+			&message.ServiceType,
+			&message.Status,
+			&message.CreatedAt,
+			&message.SubmissionLatencySeconds,
+		); err != nil {
+			return nil, fmt.Errorf("scan user messages report: %w", err)
+		}
+
+		messages = append(messages, message)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate user messages report: %w", err)
+	}
+
+	return messages, nil
+}
+
 func (m *messageDB) ClaimPendingMessages(ctx context.Context, serviceType controllermodel.ServiceType, limit int) (controllermodel.Messages, error) {
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {

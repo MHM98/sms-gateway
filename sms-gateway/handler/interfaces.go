@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"time"
 
 	controllermodel "sms-gateway/models/controller"
 )
@@ -25,6 +26,7 @@ func NewWalletHandler(controller IWalletController) *WalletHandler {
 // message
 type IMessageController interface {
 	CreateAndCharge(ctx context.Context, input controllermodel.Message) error
+	GetUserReport(ctx context.Context, userID uint64, from, to time.Time) (controllermodel.Messages, error)
 }
 
 type MessageHandler struct {

@@ -33,7 +33,7 @@ func (m *MessageHandler) SendMessage(c fiber.Ctx) error {
 
 func (m *MessageHandler) GetUserReport(c fiber.Ctx) error {
 	var request apimodel.UserMessageReportRequest
-	if err := c.Bind().Query(&request); err != nil {
+	if err := c.Bind().Body(&request); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid user_id, from, or to")
 	}
 

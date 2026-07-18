@@ -57,7 +57,6 @@ func initRoutes(app *fiber.App, h handlers) {
 	message := v1.Group("/message")
 	message.Post("/send", h.message.SendMessage)
 
-	//report
-	report := v1.Group("/report")
-	report.Get("/", h.message.GetUserReport)
+	// report
+	v1.Get("/report", h.message.GetUserReport)
 }

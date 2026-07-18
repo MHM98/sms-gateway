@@ -2,6 +2,11 @@ services:
   mysql:
     image: docker.arvancloud.ir/mysql:8.4
     container_name: mysql
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 2G
     environment:
       MYSQL_DATABASE: sms_gateway
       MYSQL_USER: sms_user
@@ -24,6 +29,11 @@ services:
     build:
       context: ./migrator
       dockerfile: Dockerfile
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
     environment:
       DATABASE_URL: "sms_user:${MYSQL_PASSWORD:-sms_password}@tcp(mysql:3306)/sms_gateway?multiStatements=true"
     depends_on:
@@ -36,6 +46,11 @@ services:
     build:
       context: ./sms-gateway
       dockerfile: Dockerfile
+    deploy:
+      resources:
+        limits:
+          cpus: "3.0"
+          memory: 2G
     environment:
       DATABASE_URL: "sms_user:${MYSQL_PASSWORD:-sms_password}@tcp(mysql:3306)/sms_gateway?parseTime=true&interpolateParams=true"
       RABBITMQ_URL: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST}"
@@ -55,6 +70,12 @@ services:
     build:
       context: ./sms-worker
       dockerfile: Dockerfile
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
     environment:
       DATABASE_URL: "sms_user:${MYSQL_PASSWORD:-sms_password}@tcp(mysql:3306)/sms_gateway?parseTime=true"
       RABBITMQ_URL: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST}"
@@ -75,6 +96,10 @@ services:
       dockerfile: Dockerfile
     deploy:
       replicas: 3
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
     environment:
       DATABASE_URL: "sms_user:${MYSQL_PASSWORD:-sms_password}@tcp(mysql:3306)/sms_gateway?parseTime=true"
       RABBITMQ_URL: "amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST}"
@@ -93,6 +118,11 @@ services:
     image: docker.arvancloud.ir/rabbitmq:4-management
     container_name: rabbitmq
     hostname: rabbitmq
+    deploy:
+      resources:
+        limits:
+          cpus: "2.5"
+          memory: 2G
     restart: unless-stopped
 
     environment:

@@ -15,6 +15,7 @@ const (
 	messageStatusPending             = "pending"
 	messageStatusProcessing          = "processing"
 	messagePreviousDayOverlapMinutes = 15
+	userMessageReportPageSize        = 500
 )
 
 type messageDB struct {
@@ -47,24 +48,24 @@ func (m *messageDB) CreateAndCharge(ctx context.Context, data controllermodel.Me
 	return nil
 }
 
-func (m *messageDB) GetUserReport(ctx context.Context, userID uint64, from, to time.Time) (controllermodel.Messages, error) {
+func (m *messageDB) GetUserReport(ctx context.Context, filter controllermodel.UserMessageReportQuery) (controllermodel.Messages, error) {
 	query := `SELECT id, user_id, recipient, body, service_type, status, created_at,
-		IFNULL(submission_latency_seconds,0)
-		FROM messages
-		WHERE user_id = ? AND created_at >= ? AND created_at < ?
-		ORDER BY created_at DESC, id DESC`
+			IFNULL(submission_latency_seconds,0)
+			FROM messages
+			WHERE user_id = ? AND created_at >= ? AND created_at < ? AND id > ?
+			ORDER BY id ASC
+			LIMIT ?`
 
-	rows, err := m.db.QueryContext(ctx, query, userID, from, to)
+	rows, err := m.db.QueryContext(ctx, query, filter.UserID, filter.From,
+		filter.To, filter.LastSeen, userMessageReportPageSize)
 	if err != nil {
 		return nil, fmt.Errorf("select user messages report: %w", err)
 	}
 	defer rows.Close()
 
-	messages := make(controllermodel.Messages, 0)
+	messages := make(controllermodel.Messages, 0, userMessageReportPageSize)
 	for rows.Next() {
-		var (
-			message controllermodel.Message
-		)
+		var message controllermodel.Message
 
 		if err := rows.Scan(
 			&message.ID,
@@ -103,7 +104,8 @@ func (m *messageDB) ClaimPendingMessages(ctx context.Context, serviceType contro
 		AND created_at >= CURRENT_DATE - INTERVAL ? MINUTE
 		AND created_at < CURRENT_DATE + INTERVAL 1 DAY
 		ORDER BY created_at, id
-		LIMIT ?`
+		LIMIT ?
+		FOR UPDATE SKIP LOCKED`
 
 	rows, err := tx.QueryContext(ctx, query,
 		messageStatusPending, serviceType,

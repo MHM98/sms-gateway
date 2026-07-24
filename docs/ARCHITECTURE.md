@@ -179,7 +179,12 @@ erDiagram
 ```
 
 
-The `messages` table is partitioned daily by `created_at`. Date-bounded report queries can use partition pruning, while `idx_messages_user_report` supports filtering and ordering inside the selected partitions. `p_future` is a safety partition. Automatic creation of future partitions with MySQL Event Scheduler is planned as an operational improvement.
+The `messages` table is partitioned daily by `created_at`. Date-bounded report
+queries can use partition pruning. Reports use keyset pagination over ascending
+message IDs instead of offset pagination, so later pages do not scan and discard
+every earlier row. `p_future` is a safety partition. Automatic creation of
+future partitions with MySQL Event Scheduler is planned as an operational
+improvement.
 
 `messages.user_id` is a logical relation to `users.id`. MySQL does not support foreign keys on this user-partitioned InnoDB table, so the application enforces the relation.
 
@@ -196,13 +201,17 @@ http://127.0.0.1:3000/api/v1/sms-gateway
 | `POST` | `/wallet/add` | Add wallet credit | `204` |
 | `GET` | `/wallet/{user_id}` | Get wallet balance | `200` |
 | `POST` | `/message/send` | Accept and charge for an SMS | `204` |
-| `GET` | `/report` | Get a user's date-bounded message report | `200` |
+| `GET` | `/report?user_id={id}&from={date}&to={date}` | Get a paginated, date-bounded message report | `200` |
 
 All current unsafe endpoints (`POST`) require a UUID-valued `X-Idempotency-Key`. Fiber idempotency middleware returns the previously stored result when the same key is retried.
 
 For `/message/send`, `user_id` must be positive, `recipient` is required with at most 20 characters, `body` is required with at most 255 characters, and `service_type` must be `normal` or `express`. Each accepted message costs one wallet credit. Insufficient balance returns `409 Conflict`.
 
-For `/report`, the JSON request body contains `user_id`, `from`, and `to`. Dates use `YYYY-MM-DD`, and the range is `from <= created_at < to`. Report statuses are `pending`, `processing`, `submitted`, and `failed`.
+For `/report`, `user_id`, `from`, and `to` are query parameters. Dates use
+`YYYY-MM-DD`, and the range is `from <= created_at < to`. Each page contains
+up to 500 messages ordered by ascending message ID. To retrieve the next page,
+clients pass the response's `last_seen` ID. The field is omitted when a page is
+empty. Report statuses are `pending`, `processing`, `submitted`, and `failed`.
 
 Complete curl requests and response examples are documented in [`API_EXAMPLES.md`](./API_EXAMPLES.md).
 
@@ -210,7 +219,7 @@ Complete curl requests and response examples are documented in [`API_EXAMPLES.md
 
 | Status | Meaning |
 | ---: | --- |
-| `400` | Missing idempotency key, invalid body, or invalid user ID |
+| `400` | Missing idempotency key, invalid body, report query, or pagination values |
 | `404` | Wallet not found |
 | `409` | Insufficient wallet balance |
 | `500` | Internal server error |

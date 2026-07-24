@@ -33,8 +33,8 @@ func (m *MessageHandler) SendMessage(c fiber.Ctx) error {
 
 func (m *MessageHandler) GetUserReport(c fiber.Ctx) error {
 	var request apimodel.UserMessageReportRequest
-	if err := c.Bind().Body(&request); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid user_id, from, or to")
+	if err := c.Bind().Query(&request); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid report query parameters")
 	}
 
 	from, err := time.Parse(reportDateLayout, request.From)
@@ -50,12 +50,12 @@ func (m *MessageHandler) GetUserReport(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "to must be after from")
 	}
 
-	messages, err := m.controller.GetUserReport(
-		c.Context(),
-		request.UserID,
-		from,
-		to,
-	)
+	messages, err := m.controller.GetUserReport(c.Context(), controllermodel.UserMessageReportQuery{
+		UserID:   request.UserID,
+		From:     from,
+		To:       to,
+		LastSeen: request.LastSeen,
+	})
 	if err != nil {
 		return mapControllerError(err)
 	}
@@ -76,6 +76,9 @@ func (m *MessageHandler) GetUserReport(c fiber.Ctx) error {
 			CreatedAt:                message.CreatedAt,
 			SubmissionLatencySeconds: message.SubmissionLatencySeconds,
 		})
+	}
+	if len(messages) > 0 {
+		response.LastSeen = messages[len(messages)-1].ID
 	}
 
 	return c.Status(fiber.StatusOK).JSON(response)

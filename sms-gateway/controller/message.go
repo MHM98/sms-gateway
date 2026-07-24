@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	controllermodel "sms-gateway/models/controller"
 )
@@ -30,10 +29,10 @@ func (c *MessageController) CreateAndCharge(ctx context.Context, message control
 	return c.repository.CreateAndCharge(ctx, message)
 }
 
-func (c *MessageController) GetUserReport(ctx context.Context, userID uint64, from, to time.Time) (controllermodel.Messages, error) {
-	messages, err := c.repository.GetUserReport(ctx, userID, from, to)
+func (c *MessageController) GetUserReport(ctx context.Context, query controllermodel.UserMessageReportQuery) (controllermodel.Messages, error) {
+	messages, err := c.repository.GetUserReport(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("get report for user %d: %w", userID, err)
+		return nil, fmt.Errorf("get report for user %d: %w", query.UserID, err)
 	}
 
 	return messages, nil

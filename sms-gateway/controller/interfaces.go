@@ -14,7 +14,7 @@ type IWalletRepository interface {
 
 type IMessageRepository interface {
 	CreateAndCharge(ctx context.Context, message controllermodel.Message) error
-	GetUserReport(ctx context.Context, userID uint64, from, to time.Time) (controllermodel.Messages, error)
+	GetUserReport(ctx context.Context, query controllermodel.UserMessageReportQuery) (controllermodel.Messages, error)
 	ClaimPendingMessages(ctx context.Context, serviceType controllermodel.ServiceType, limit int) (controllermodel.Messages, error)
 	ReleaseMessage(ctx context.Context, messageID uint64, createdAt time.Time) error
 }

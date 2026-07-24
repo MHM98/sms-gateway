@@ -63,30 +63,25 @@ Success: `204 No Content`
 ## Get User Message Report
 
 ```http
-GET /report
-Content-Type: application/json
+GET /report?user_id=12&from=2026-07-17&to=2026-07-19
 ```
 
-| Body field | Required | Validation |
+| Query parameter | Required | Validation |
 | --- | :---: | --- |
 | `user_id` | Yes | Positive integer |
 | `from` | Yes | `YYYY-MM-DD`; start date is inclusive |
 | `to` | Yes | `YYYY-MM-DD`; must be after `from` and is exclusive |
+| `last_seen` | No | ID of the last message from the previous page |
 
 ```bash
-curl -i -X GET \
-  'http://127.0.0.1:3000/api/v1/sms-gateway/report' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "user_id": 12,
-    "from": "2026-07-17",
-    "to": "2026-07-19"
-  }'
+curl -i \
+  'http://127.0.0.1:3000/api/v1/sms-gateway/report?user_id=12&from=2026-07-17&to=2026-07-19'
 ```
 
 Success: `200 OK`
 
-The example returns messages created on July 17 and July 18. Messages are ordered newest first.
+The example returns up to 500 messages created on July 17 and July 18. Messages
+are ordered by ID from oldest to newest.
 
 Example response:
 
@@ -95,6 +90,7 @@ Example response:
   "user_id": 12,
   "from": "2026-07-17",
   "to": "2026-07-19",
+  "last_seen": 42,
   "messages": [
     {
       "id": 42,
@@ -109,11 +105,22 @@ Example response:
 }
 ```
 
+To retrieve the next page, pass the response's `last_seen` value:
+
+```bash
+curl -i --get \
+  'http://127.0.0.1:3000/api/v1/sms-gateway/report' \
+  --data-urlencode 'user_id=12' \
+  --data-urlencode 'from=2026-07-17' \
+  --data-urlencode 'to=2026-07-19' \
+  --data-urlencode 'last_seen=42'
+```
+
 ## Common Errors
 
 | Status | Meaning |
 | ---: | --- |
-| `400` | Missing idempotency key, invalid request body, invalid user ID, or invalid report date range |
+| `400` | Missing idempotency key, invalid request data, invalid report date range, or pagination values |
 | `404` | Wallet not found |
 | `409` | Insufficient wallet balance |
 | `500` | Internal server error |

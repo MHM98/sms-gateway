@@ -10,15 +10,17 @@ type MessageRequest struct {
 }
 
 type UserMessageReportRequest struct {
-	UserID uint64 `json:"user_id" validate:"gt=0"`
-	From   string `json:"from" validate:"required,datetime=2006-01-02"`
-	To     string `json:"to" validate:"required,datetime=2006-01-02"`
+	UserID   uint64 `query:"user_id" validate:"gt=0"`
+	From     string `query:"from" validate:"required,datetime=2006-01-02"`
+	To       string `query:"to" validate:"required,datetime=2006-01-02"`
+	LastSeen uint64 `query:"last_seen" validate:"omitempty,gt=0"`
 }
 
 type UserMessageReportResponse struct {
 	UserID   uint64                 `json:"user_id"`
 	From     string                 `json:"from"`
 	To       string                 `json:"to"`
+	LastSeen uint64                 `json:"last_seen,omitempty"`
 	Messages MessagesReportResponse `json:"messages"`
 }
 

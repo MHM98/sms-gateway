@@ -44,8 +44,8 @@ CREATE TABLE IF NOT EXISTS messages (
 
     INDEX idx_messages_user_report (
         user_id,
-        created_at DESC,
-        id DESC
+        created_at ,
+        id 
     ),
 
     INDEX idx_messages_pending (
